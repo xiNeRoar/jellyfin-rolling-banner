@@ -349,30 +349,19 @@ class Home {
   }
 
   static transitionListener() {
-    const runningTransitions = new Set();
-    $(".homePage:not(.hide) .misty-banner-body").on(
-      "transitionstart",
-      function (e) {
-        runningTransitions.add(e.target);
-        this.transitionendFlag = false;
-      }.bind(this)
-    );
     $(".homePage:not(.hide) .misty-banner-body").on(
       "transitionend",
       function (e) {
-        runningTransitions.delete(e.target);
-        if (runningTransitions.size == 0) {
-          if (this.transitionendFlag) {
-            if (this.index >= $(".homePage:not(.hide) .misty-banner-item").length - 1) {
-              this.index = 1;
-              this.staticSwitchCss();
-            }
-            if (this.index <= 0) {
-              this.index = $(".homePage:not(.hide) .misty-banner-item").length - 2;
-              this.staticSwitchCss();
-            }
+        // Ensure the transition has ended on the correct property
+        if (e.originalEvent.propertyName === "left") {
+          if (this.index >= $(".homePage:not(.hide) .misty-banner-item").length - 1) {
+            this.index = 1;
+            this.staticSwitchCss();
           }
-          this.transitionendFlag = true;
+          if (this.index <= 0) {
+            this.index = $(".homePage:not(.hide) .misty-banner-item").length - 2;
+            this.staticSwitchCss();
+          }
         }
       }.bind(this)
     );
@@ -471,14 +460,12 @@ class Home {
 
     // Add touch event listeners for mobile drag
     $(".misty-banner-body").on("touchstart.carousel", (e) => {
-      e.preventDefault(); // Prevent default touch behaviors
       this.startX = e.touches[0].pageX;
       this.dragging = true;
       this.resetCarouselInterval(); // Reset interval on manual interaction
     });
 
     $(".misty-banner-body").on("touchmove.carousel", (e) => {
-      e.preventDefault(); // Prevent default touch behaviors
       if (!this.dragging) return;
       let moveX = e.touches[0].pageX - this.startX;
       let moveX_percent = (moveX / innerWidth) * 100; // Convert movement to percentage
@@ -489,7 +476,6 @@ class Home {
     });
 
     $(".misty-banner-body").on("touchend.carousel", (e) => {
-      e.preventDefault(); // Prevent default touch behaviors
       let moveX = e.changedTouches[0].pageX - this.startX;
       let moveX_percent = (moveX / innerWidth) * 100; // Convert movement to percentage
       this.dragging = false;
@@ -522,15 +508,29 @@ class Home {
 
   static backwards() {
     const itemsLength = $(".homePage:not(.hide) .misty-banner-item").length;
-    this.index = (this.index - 1 + itemsLength) % itemsLength;
+    this.index--;
     this.dynamicSwitchCss();
+
+    // Check if index is at the cloned last item
+    if (this.index <= 0) {
+      this.index = itemsLength - 2; // Reset to last real item
+      this.staticSwitchCss();
+    }
+
     this.resetCarouselInterval(); // Reset interval after manual backward switch
   }
 
   static forwards() {
     const itemsLength = $(".homePage:not(.hide) .misty-banner-item").length;
-    this.index = (this.index + 1) % itemsLength;
+    this.index++;
     this.dynamicSwitchCss();
+
+    // Check if index is at the cloned first item
+    if (this.index >= itemsLength - 1) {
+      this.index = 1; // Reset to first real item
+      this.staticSwitchCss();
+    }
+
     this.resetCarouselInterval(); // Reset interval after manual forward switch
   }
 

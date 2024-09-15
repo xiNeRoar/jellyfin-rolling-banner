@@ -62,6 +62,9 @@ class Home {
           }
         } else {
           clearInterval(this.bannerInterval);
+          // Remove event listeners to prevent memory leaks
+          $(".misty-banner-body").off(".carousel");
+          $(document).off(".carousel");
         }
       }.bind(this)
     );
@@ -238,15 +241,42 @@ class Home {
     });
   }
 
+  // static injectCall(func, arg) {
+  //   const script = `
+  // 	  const client = await new Promise((resolve, reject) => {
+  // 		  setInterval(() => {
+  // 			  if (window.ApiClient != undefined) resolve(window.ApiClient);
+  // 		  }, 16);
+  // 	  });
+  // 	  return await client.${func}(${arg})
+  // 	  `;
+  //   return this.injectCode(script);
+  // }
+
   static injectCall(func, arg) {
     const script = `
-		  const client = await new Promise((resolve, reject) => {
-			  setInterval(() => {
-				  if (window.ApiClient != undefined) resolve(window.ApiClient);
-			  }, 16);
-		  });
-		  return await client.${func}(${arg})
-		  `;
+      const client = await new Promise((resolve, reject) => {
+        const startTime = Date.now();
+        const interval = setInterval(() => {
+          if (window.ApiClient != undefined && window.ApiClient.getCurrentUserId()) {
+            clearInterval(interval);
+            resolve(window.ApiClient);
+          }
+          if (Date.now() - startTime > 10000) {
+            clearInterval(interval);
+            reject(new Error("ApiClient or user ID not available"));
+          }
+        }, 16);
+      }).catch(error => {
+        console.error(error);
+        return null;
+      });
+      if (client) {
+        return await client.${func}(${arg});
+      } else {
+        return null;
+      }
+    `;
     return this.injectCode(script);
   }
 
@@ -321,16 +351,16 @@ class Home {
     $(".homePage:not(.hide) .misty-banner-logo.active").removeClass("active");
     $(`.homePage:not(.hide) .misty-banner-logo[id=${id}]`).addClass("active");
   }
-  static backwards() {
-    this.index -=
-      this.index - 1 == -1 ? -($(".homePage:not(.hide) .misty-banner-item").length - 1) : 1;
-    this.dynamicSwitchCss();
-  }
-  static forwards() {
-    this.index +=
-      this.index + 1 == $(".homePage:not(.hide) .misty-banner-item").length ? -this.index : 1;
-    this.dynamicSwitchCss();
-  }
+  // static backwards() {
+  //   this.index -=
+  //     this.index - 1 == -1 ? -($(".homePage:not(.hide) .misty-banner-item").length - 1) : 1;
+  //   this.dynamicSwitchCss();
+  // }
+  // static forwards() {
+  //   this.index +=
+  //     this.index + 1 == $(".homePage:not(.hide) .misty-banner-item").length ? -this.index : 1;
+  //   this.dynamicSwitchCss();
+  // }
 
   static transitionListener() {
     const runningTransitions = new Set();
@@ -399,86 +429,167 @@ class Home {
       }.bind(this)
     );
   }
-  static touchListener() {
-    //手指触摸
-    $(".homePage:not(.hide) .misty-banner-body").on(
-      "touchstart",
-      function (e) {
-        if (
-          this.index != 0 &&
-          this.index != $(".homePage:not(.hide) .misty-banner-item").length - 1
-        ) {
-          clearInterval(this.bannerInterval);
-          this.moveX = 0;
-          this.startX = e.targetTouches[0].pageX;
-          this.flag = false;
-        } else {
-          this.alertDialog();
-        }
-        e.stopPropagation();
-      }.bind(this)
-    );
-    //手指移动
-    $(".homePage:not(.hide) .misty-banner-body").on(
-      "touchmove",
-      function (e) {
-        if (
-          this.index != 0 &&
-          this.index != $(".homePage:not(.hide) .misty-banner-item").length - 1
-        ) {
-          this.moveX = e.targetTouches[0].pageX - this.startX;
-          this.flag = true;
-          $(".homePage:not(.hide) .misty-banner-body").css({
-            left: -this.index * innerWidth + this.moveX,
-            transition: "none",
-          });
-        }
-        e.stopPropagation();
-      }.bind(this)
-    );
-    //手指离开
-    $(".homePage:not(.hide) .misty-banner-body").on(
-      "touchend",
-      function (e) {
-        if (
-          this.index != 0 &&
-          this.index != $(".homePage:not(.hide) .misty-banner-item").length - 1
-        ) {
-          if (this.flag) {
-            if (Math.abs(this.moveX) > 50) {
-              if (this.moveX > 0) {
-                this.backwards();
-              } else if (this.moveX < 0) {
-                this.forwards();
-              }
-            } else {
-              //回弹效果
-              $(".homePage:not(.hide) .misty-banner-body").css({
-                left: -(this.index * 100).toString() + "%",
-                transition: "none",
-              });
-            }
-          }
-        }
-        this.startCarousel();
-        e.stopPropagation();
-      }.bind(this)
-    );
-  }
+  // static touchListener() {
+  //   //手指触摸
+  //   $(".homePage:not(.hide) .misty-banner-body").on(
+  //     "touchstart",
+  //     function (e) {
+  //       if (
+  //         this.index != 0 &&
+  //         this.index != $(".homePage:not(.hide) .misty-banner-item").length - 1
+  //       ) {
+  //         clearInterval(this.bannerInterval);
+  //         this.moveX = 0;
+  //         this.startX = e.targetTouches[0].pageX;
+  //         this.flag = false;
+  //       } else {
+  //         this.alertDialog();
+  //       }
+  //       e.stopPropagation();
+  //     }.bind(this)
+  //   );
+  //   //手指移动
+  //   $(".homePage:not(.hide) .misty-banner-body").on(
+  //     "touchmove",
+  //     function (e) {
+  //       if (
+  //         this.index != 0 &&
+  //         this.index != $(".homePage:not(.hide) .misty-banner-item").length - 1
+  //       ) {
+  //         this.moveX = e.targetTouches[0].pageX - this.startX;
+  //         this.flag = true;
+  //         $(".homePage:not(.hide) .misty-banner-body").css({
+  //           left: -this.index * innerWidth + this.moveX,
+  //           transition: "none",
+  //         });
+  //       }
+  //       e.stopPropagation();
+  //     }.bind(this)
+  //   );
+  //   //手指离开
+  //   $(".homePage:not(.hide) .misty-banner-body").on(
+  //     "touchend",
+  //     function (e) {
+  //       if (
+  //         this.index != 0 &&
+  //         this.index != $(".homePage:not(.hide) .misty-banner-item").length - 1
+  //       ) {
+  //         if (this.flag) {
+  //           if (Math.abs(this.moveX) > 50) {
+  //             if (this.moveX > 0) {
+  //               this.backwards();
+  //             } else if (this.moveX < 0) {
+  //               this.forwards();
+  //             }
+  //           } else {
+  //             //回弹效果
+  //             $(".homePage:not(.hide) .misty-banner-body").css({
+  //               left: -(this.index * 100).toString() + "%",
+  //               transition: "none",
+  //             });
+  //           }
+  //         }
+  //       }
+  //       this.startCarousel();
+  //       e.stopPropagation();
+  //     }.bind(this)
+  //   );
+  // }
+
+  // static startCarousel() {
+  //   // Function to start the carousel interval
+  //   this.resetCarouselInterval();
+
+  //   // Add event listeners for desktop drag
+  //   $(".misty-banner-body").on("mousedown", (e) => {
+  //     e.preventDefault();
+  //     this.dragging = true;
+  //     this.startX = e.pageX;
+  //     this.resetCarouselInterval(); // Reset interval on manual interaction
+  //   });
+
+  //   $(document).on("mousemove", (e) => {
+  //     if (this.dragging) {
+  //       let moveX = e.pageX - this.startX;
+  //       $(".homePage:not(.hide) .misty-banner-body").css({
+  //         left: -this.index * innerWidth + moveX,
+  //         transition: "none",
+  //       });
+  //     }
+  //   });
+
+  //   $(document).on("mouseup", (e) => {
+  //     if (this.dragging) {
+  //       let moveX = e.pageX - this.startX;
+  //       this.dragging = false;
+  //       if (Math.abs(moveX) > 50) {
+  //         if (moveX > 0) {
+  //           this.backwards();
+  //         } else {
+  //           this.forwards();
+  //         }
+  //       } else {
+  //         $(".homePage:not(.hide) .misty-banner-body").css({
+  //           left: -(this.index * 100).toString() + "%",
+  //           transition: "none",
+  //         });
+  //       }
+  //       this.resetCarouselInterval(); // Reset interval after manual switch
+  //     }
+  //   });
+
+  //   // Add touch event listeners for mobile drag
+  //   $(".misty-banner-body").on("touchstart", (e) => {
+  //     this.startX = e.touches[0].pageX;
+  //     this.dragging = true;
+  //     this.resetCarouselInterval(); // Reset interval on manual interaction
+  //   });
+
+  //   $(".misty-banner-body").on("touchmove", (e) => {
+  //     if (!this.dragging) return;
+  //     let moveX = e.touches[0].pageX - this.startX;
+  //     $(".homePage:not(.hide) .misty-banner-body").css({
+  //       left: -this.index * innerWidth + moveX,
+  //       transition: "none",
+  //     });
+  //   });
+
+  //   $(".misty-banner-body").on("touchend", (e) => {
+  //     let moveX = e.changedTouches[0].pageX - this.startX;
+  //     this.dragging = false;
+  //     if (Math.abs(moveX) > 50) {
+  //       if (moveX > 0) {
+  //         this.backwards();
+  //       } else {
+  //         this.forwards();
+  //       }
+  //     } else {
+  //       $(".homePage:not(.hide) .misty-banner-body").css({
+  //         left: -(this.index * 100).toString() + "%",
+  //         transition: "none",
+  //       });
+  //     }
+  //     this.resetCarouselInterval(); // Reset interval after manual switch
+  //   });
+  // }
 
   static startCarousel() {
+    // Remove existing event listeners to prevent duplication
+    $(".misty-banner-body").off(".carousel");
+    $(document).off(".carousel");
+
     // Function to start the carousel interval
     this.resetCarouselInterval();
 
     // Add event listeners for desktop drag
-    $(".misty-banner-body").on("mousedown", (e) => {
+    $(".misty-banner-body").on("mousedown.carousel", (e) => {
       e.preventDefault();
       this.dragging = true;
       this.startX = e.pageX;
       this.resetCarouselInterval(); // Reset interval on manual interaction
     });
 
-    $(document).on("mousemove", (e) => {
+    $(document).on("mousemove.carousel", (e) => {
       if (this.dragging) {
         let moveX = e.pageX - this.startX;
         $(".homePage:not(.hide) .misty-banner-body").css({
@@ -488,7 +599,7 @@ class Home {
       }
     });
 
-    $(document).on("mouseup", (e) => {
+    $(document).on("mouseup.carousel", (e) => {
       if (this.dragging) {
         let moveX = e.pageX - this.startX;
         this.dragging = false;
@@ -509,13 +620,13 @@ class Home {
     });
 
     // Add touch event listeners for mobile drag
-    $(".misty-banner-body").on("touchstart", (e) => {
+    $(".misty-banner-body").on("touchstart.carousel", (e) => {
       this.startX = e.touches[0].pageX;
       this.dragging = true;
       this.resetCarouselInterval(); // Reset interval on manual interaction
     });
 
-    $(".misty-banner-body").on("touchmove", (e) => {
+    $(".misty-banner-body").on("touchmove.carousel", (e) => {
       if (!this.dragging) return;
       let moveX = e.touches[0].pageX - this.startX;
       $(".homePage:not(.hide) .misty-banner-body").css({
@@ -524,7 +635,7 @@ class Home {
       });
     });
 
-    $(".misty-banner-body").on("touchend", (e) => {
+    $(".misty-banner-body").on("touchend.carousel", (e) => {
       let moveX = e.changedTouches[0].pageX - this.startX;
       this.dragging = false;
       if (Math.abs(moveX) > 50) {
@@ -551,16 +662,30 @@ class Home {
     }, 12000);
   }
 
+  // static backwards() {
+  //   this.index -=
+  //     this.index - 1 == -1 ? -($(".homePage:not(.hide) .misty-banner-item").length - 1) : 1;
+  //   this.dynamicSwitchCss();
+  //   this.resetCarouselInterval(); // Reset interval after manual backward switch
+  // }
+
+  // static forwards() {
+  //   this.index +=
+  //     this.index + 1 == $(".homePage:not(.hide) .misty-banner-item").length ? -this.index : 1;
+  //   this.dynamicSwitchCss();
+  //   this.resetCarouselInterval(); // Reset interval after manual forward switch
+  // }
+
   static backwards() {
-    this.index -=
-      this.index - 1 == -1 ? -($(".homePage:not(.hide) .misty-banner-item").length - 1) : 1;
+    const itemsLength = $(".homePage:not(.hide) .misty-banner-item").length;
+    this.index = (this.index - 1 + itemsLength) % itemsLength;
     this.dynamicSwitchCss();
     this.resetCarouselInterval(); // Reset interval after manual backward switch
   }
 
   static forwards() {
-    this.index +=
-      this.index + 1 == $(".homePage:not(.hide) .misty-banner-item").length ? -this.index : 1;
+    const itemsLength = $(".homePage:not(.hide) .misty-banner-item").length;
+    this.index = (this.index + 1) % itemsLength;
     this.dynamicSwitchCss();
     this.resetCarouselInterval(); // Reset interval after manual forward switch
   }
@@ -673,14 +798,21 @@ class Home {
 
   /* 初始事件 */
   static async initEvent() {
-    this.touchListener();
+    // this.touchListener();
     this.onclickListener();
   }
 }
 
 // 运行
-if ("BroadcastChannel" in window || "postMessage" in window) {
-  if ($("meta[name=application-name]").attr("content") == "Jellyfin") {
-    Home.start();
+if (window.ApiClient && window.ApiClient.getCurrentUserId()) {
+  if ("BroadcastChannel" in window || "postMessage" in window) {
+    if ($("meta[name=application-name]").attr("content") == "Jellyfin") {
+      Home.start();
+    }
   }
 }
+// if ("BroadcastChannel" in window || "postMessage" in window) {
+//   if ($("meta[name=application-name]").attr("content") == "Jellyfin") {
+//     Home.start();
+//   }
+// }

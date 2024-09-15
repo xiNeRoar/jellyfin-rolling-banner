@@ -1,7 +1,6 @@
 class Home {
   static start() {
     this.bannerInterval = null;
-    this.eventListenersAdded = false;
     this.refreshItem = true;
     this.cache = { items: undefined };
     this.index = 1;
@@ -195,13 +194,13 @@ class Home {
   /* Insert Loading */
   static initLoading() {
     const load = `
-        <div class="misty-loading">
-          <h1></h1>
-          <div class="docspinner mdl-spinner mdlSpinnerActive">
-            <!-- Spinner layers here -->
-          </div>
+      <div class="misty-loading">
+        <h1></h1>
+        <div class="docspinner mdl-spinner mdlSpinnerActive">
+          <!-- Spinner layers here -->
         </div>
-      `;
+      </div>
+    `;
     $("body").append(load);
   }
 
@@ -219,32 +218,32 @@ class Home {
         });
       }
       const script = `
-          <script class="I${hash}">
-            setTimeout(async ()=> {
-              async function R${hash}(){${code}};
-              if ("BroadcastChannel" in window) {
-                const channel = new BroadcastChannel("${hash}");
-                channel.postMessage(await R${hash}());
-              } else if ('postMessage' in window) {
-                window.parent.postMessage({channel:"${hash}",message:await R${hash}()}, "*");
-              }
-              document.querySelector("script.I${hash}").remove()
-            }, 16)
-          </script>
-          `;
+        <script class="I${hash}">
+          setTimeout(async () => {
+            async function R${hash}() { ${code} };
+            if ("BroadcastChannel" in window) {
+              const channel = new BroadcastChannel("${hash}");
+              channel.postMessage(await R${hash}());
+            } else if ('postMessage' in window) {
+              window.parent.postMessage({ channel: "${hash}", message: await R${hash}() }, "*");
+            }
+            document.querySelector("script.I${hash}").remove();
+          }, 16);
+        </script>
+      `;
       $(document.head || document.documentElement).append(script);
     });
   }
 
   static injectCall(func, arg) {
     const script = `
-        const client = await new Promise((resolve, reject) => {
-          setInterval(() => {
-            if (window.ApiClient != undefined) resolve(window.ApiClient);
-          }, 16);
-        });
-        return await client.${func}(${arg})
-        `;
+      const client = await new Promise((resolve, reject) => {
+        setInterval(() => {
+          if (window.ApiClient != undefined) resolve(window.ApiClient);
+        }, 16);
+      });
+      return await client.${func}(${arg})
+    `;
     return this.injectCode(script);
   }
 
@@ -354,8 +353,8 @@ class Home {
 
   static alertDialog() {
     const script = `
-        Dashboard.alert("Please slow down！");
-        `;
+      Dashboard.alert("Please slow down！");
+    `;
     this.injectCode(script);
   }
 
@@ -387,9 +386,7 @@ class Home {
   }
 
   static addEventListeners() {
-    // if (this.eventListenersAdded) return;
-    // this.eventListenersAdded = true;
-
+    // Removed the eventListenersAdded flag to ensure event listeners are added
     // Click event listeners
     $(".homePage:not(.hide) .scrollbuttoncontainer-misty.scrollbuttoncontainer-backwards").on(
       "click",
@@ -539,27 +536,26 @@ class Home {
   /* Insert Banner */
   static async initBanner() {
     const banner = `
-        <div class="misty-banner">
-          <div class="emby-scrollbuttons emby-scrollbuttons-misty" title="">
-            <div class="scrollbuttoncontainer-misty scrollbuttoncontainer-backwards">
-              <button type="button" class="emby-scrollbuttons-scrollbutton paper-icon-button-light">
-                <i class="md-icon autortl material-icons chevron_left"></i>
-              </button>
-            </div>
-            <div class="scrollbuttoncontainer-misty scrollbuttoncontainer-forwards" >
-              <button type="button"  class="emby-scrollbuttons-scrollbutton paper-icon-button-light">
-                <i class="md-icon autortl material-icons chevron_right"></i>
-              </button>
-            </div>
+      <div class="misty-banner">
+        <div class="emby-scrollbuttons emby-scrollbuttons-misty" title="">
+          <div class="scrollbuttoncontainer-misty scrollbuttoncontainer-backwards">
+            <button type="button" class="emby-scrollbuttons-scrollbutton paper-icon-button-light">
+              <i class="md-icon autortl material-icons chevron_left"></i>
+            </button>
           </div>
-          <div class="misty-banner-body">
-          </div>
-          <div class="misty-banner-mask"></div>
-          <div class="misty-banner-library">
-            <div class="misty-banner-logos"></div>
+          <div class="scrollbuttoncontainer-misty scrollbuttoncontainer-forwards">
+            <button type="button" class="emby-scrollbuttons-scrollbutton paper-icon-button-light">
+              <i class="md-icon autortl material-icons chevron_right"></i>
+            </button>
           </div>
         </div>
-        `;
+        <div class="misty-banner-body"></div>
+        <div class="misty-banner-mask"></div>
+        <div class="misty-banner-library">
+          <div class="misty-banner-logos"></div>
+        </div>
+      </div>
+    `;
     $(".homePage:not(.hide) .homeSectionsContainer").prepend(banner);
 
     // Insert data
@@ -570,28 +566,28 @@ class Home {
     }
     for (let detail of this.data.Items) {
       const itemHtml = `
-          <div class="misty-banner-item" id="${detail.Id}">
-            <img draggable="false" loading="eager" decoding="sync" class="misty-banner-cover" src="${await this.getImageUrl(
-              detail.Id,
-              this.coverOptions
-            )}" alt="Backdrop" style="">
-            <div class="misty-banner-info padded-left padded-right">
-              <h1>${detail.Name}</h1>
-              <div><p>${detail.Overview}</p></div>
-              <div><button onclick="Emby.Page.showItem('${detail.Id}')">MORE</button></div>
-            </div>
+        <div class="misty-banner-item" id="${detail.Id}">
+          <img draggable="false" loading="eager" decoding="sync" class="misty-banner-cover" src="${await this.getImageUrl(
+            detail.Id,
+            this.coverOptions
+          )}" alt="Backdrop" style="">
+          <div class="misty-banner-info padded-left padded-right">
+            <h1>${detail.Name}</h1>
+            <div><p>${detail.Overview}</p></div>
+            <div><button onclick="Emby.Page.showItem('${detail.Id}')">MORE</button></div>
           </div>
-          `;
+        </div>
+      `;
 
       if (detail.ImageTags && detail.ImageTags.Logo) {
         const logoHtml = `
-            <img id="${
-              detail.Id
-            }" draggable="false" loading="eager" decoding="sync" class="misty-banner-logo" data-banner="img-title" alt="Logo" src="${await this.getImageUrl(
+          <img id="${
+            detail.Id
+          }" draggable="false" loading="eager" decoding="sync" class="misty-banner-logo" data-banner="img-title" alt="Logo" src="${await this.getImageUrl(
           detail.Id,
           this.logoOptions
         )}">
-            `;
+        `;
         $(".homePage:not(.hide) .misty-banner-logos").append(logoHtml);
       }
       $(".homePage:not(.hide) .misty-banner-body").append(itemHtml);

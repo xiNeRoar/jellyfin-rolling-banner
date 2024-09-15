@@ -387,8 +387,8 @@ class Home {
   }
 
   static addEventListeners() {
-    if (this.eventListenersAdded) return;
-    this.eventListenersAdded = true;
+    // if (this.eventListenersAdded) return;
+    // this.eventListenersAdded = true;
 
     // Click event listeners
     $(".homePage:not(.hide) .scrollbuttoncontainer-misty.scrollbuttoncontainer-backwards").on(
